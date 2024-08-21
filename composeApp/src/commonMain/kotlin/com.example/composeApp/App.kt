@@ -52,7 +52,7 @@ fun App(
                         }
                         is RunState.Finished -> {
                             scaffoldState.snackbarHostState.showSnackbar(
-                                "Finished with ${state.times} retries in ${state.measureTime}ms"
+                                "Finished with ${state.times} retries in ${state.measureTime}"
                             )
                         }
                         else -> {}
@@ -128,7 +128,7 @@ fun App(
                             onClick = {
                                 viewModel.inputValue(i)
                             },
-                            enabled = selectedCell.value != null
+                            enabled = selectedCell.value != null && gameState.value.isRunning.not()
                         ) {
                             Text(
                                 text = i.toString(),
