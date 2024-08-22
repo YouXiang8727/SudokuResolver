@@ -1,5 +1,6 @@
 package com.example.composeApp.model
 
+import com.example.composeApp.model.common.Stack
 import com.example.composeApp.model.enums.RunState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,8 @@ class Game {
     private val _runState: MutableStateFlow<RunState> = MutableStateFlow(RunState.Init)
     val runState: StateFlow<RunState> = _runState.asStateFlow()
 
+    private val inputCellStack: Stack<Cell> = Stack()
+
     private fun inputValue(
         row: Int,
         col: Int,
@@ -37,13 +40,13 @@ class Game {
         isDefault: Boolean = false
     ) {
         _cells.value = cells.value.copyOf().apply {
-            this[row][col] = Cell(
-                row,
-                col,
-                value,
-                isValid(row, col, value),
-                isDefault
-            )
+            val isValid = isValid(row, col, value)
+            val cell = Cell(row, col, value, isValid, isDefault)
+            this[row][col] = cell
+
+            if (isValid && value != -1 && isDefault.not()) {
+                inputCellStack.push(cell)
+            }
         }
     }
 
@@ -72,54 +75,56 @@ class Game {
             return
         }
 
-        var currentIndex = 0
-
-        var retryCount = 0
+        var retryCount: Int
         val measureTime = measureTime {
-            val needInputCells = cells.value.flatten().filterNot {
-                it.isDefault
-            }.sortedBy { cell ->
-                (1..9).filter { value ->
-                    isValid(cell.row, cell.col, value)
-                }.size
-            }.map { cell ->
-                Pair(cell.row, cell.col)
-            }
-
-            while (currentIndex >= 0 && currentIndex < needInputCells.size) {
-                val row = needInputCells[currentIndex].first
-                val col = needInputCells[currentIndex].second
-
-                setSelectedCell(row, col)
-
-                val startValue = max(cells.value[row][col].value, 0) + 1
-
-                val findValid: Boolean = run findValid@{
-                    for (i in startValue..9) {
-                        retryCount++
-                        val isValid = isValid(row, col, i)
-                        inputValue(row, col, i)
-                        yield()
-                        if (isValid) return@findValid true
-                    }
-                    false
-                }
-
-                if (findValid) {
-                    currentIndex++
-                } else {
-                    inputValue(row, col, -1)
-                    yield()
-                    currentIndex--
-                }
-            }
+            retryCount = inputCell(getNextInputCell())
         }
 
-        _runState.value = if (currentIndex < 0) {
+        _runState.value = if (inputCellStack.isEmpty()) {
             RunState.Error("Could not resolve sudoku, please check your input and try again")
         } else {
             RunState.Finished(retryCount, measureTime)
         }
+    }
+
+    private suspend fun inputValueAndFindValid(cell: Cell, addRetryCount: () -> Unit): Boolean {
+        setSelectedCell(cell.row, cell.col)
+        val startValue = max(cell.value, 0) + 1
+
+        for (i in startValue..9) {
+            val isValid = isValid(cell.row, cell.col, i)
+            inputValue(cell.row, cell.col, i)
+            yield()
+            addRetryCount()
+            if (isValid) return true
+        }
+        inputValue(cell.row, cell.col, -1)
+        yield()
+        return false
+    }
+
+    private fun getNextInputCell(): Cell? {
+        return cells.value.flatten().filter {
+            it.value == -1
+        }.minByOrNull { cell ->
+            (1..9).filter { value ->
+                isValid(cell.row, cell.col, value)
+            }.size
+        }
+    }
+
+    private suspend fun inputCell(cell: Cell?, tryCount: Int = 0): Int {
+        cell ?: return tryCount
+
+        var tryCountCopy = tryCount
+        val inputValueAndFindValid = inputValueAndFindValid(
+            cell
+        ) {
+            tryCountCopy++
+        }
+
+        val nextInputCell = if (inputValueAndFindValid) getNextInputCell() else inputCellStack.pop()
+        return inputCell(nextInputCell, tryCountCopy)
     }
 
     fun clearResult() {
