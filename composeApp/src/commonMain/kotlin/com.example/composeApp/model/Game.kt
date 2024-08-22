@@ -24,10 +24,13 @@ class Game {
 
     val cells: StateFlow<Array<Array<Cell>>> = _cells.asStateFlow()
 
+    private val _selectedCell: MutableStateFlow<Pair<Int, Int>?> = MutableStateFlow(null)
+    val selectedCell: StateFlow<Pair<Int, Int>?> = _selectedCell.asStateFlow()
+
     private val _runState: MutableStateFlow<RunState> = MutableStateFlow(RunState.Init)
     val runState: StateFlow<RunState> = _runState.asStateFlow()
 
-    fun inputValue(
+    private fun inputValue(
         row: Int,
         col: Int,
         value: Int,
@@ -87,6 +90,8 @@ class Game {
                 val row = needInputCells[currentIndex].first
                 val col = needInputCells[currentIndex].second
 
+                setSelectedCell(row, col)
+
                 val startValue = max(cells.value[row][col].value, 0) + 1
 
                 val findValid: Boolean = run findValid@{
@@ -140,5 +145,17 @@ class Game {
             }
         }
         _runState.value = RunState.Init
+    }
+
+    fun inputValue(
+        value: Int
+    ) {
+        selectedCell.value?.let {
+            inputValue(it.first, it.second, value, value != -1)
+        }
+    }
+
+    fun setSelectedCell(row: Int, col: Int) {
+        _selectedCell.value = Pair(row, col)
     }
 }
