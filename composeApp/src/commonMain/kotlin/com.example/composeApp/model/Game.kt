@@ -1,7 +1,6 @@
 package com.example.composeApp.model
 
 import com.example.composeApp.model.enums.RunState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -95,6 +94,7 @@ class Game {
                         retryCount++
                         val isValid = isValid(row, col, i)
                         inputValue(row, col, i)
+                        yield()
                         if (isValid) return@findValid true
                     }
                     false
@@ -104,9 +104,9 @@ class Game {
                     currentIndex++
                 } else {
                     inputValue(row, col, -1)
+                    yield()
                     currentIndex--
                 }
-                yield()
             }
         }
 
