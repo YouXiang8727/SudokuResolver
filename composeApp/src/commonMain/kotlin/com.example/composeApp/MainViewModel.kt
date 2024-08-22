@@ -2,6 +2,7 @@ package com.example.composeApp
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.composeApp.model.Cell
 import com.example.composeApp.model.Game
 import kotlinx.coroutines.launch
 
@@ -18,8 +19,8 @@ class MainViewModel: ViewModel() {
         game.inputValue(value)
     }
 
-    fun setSelectedCell(row: Int, col: Int) {
-        game.setSelectedCell(row, col)
+    fun setSelectedCell(cell: Cell) {
+        game.setSelectedCell(cell)
     }
 
     fun clearAll() {

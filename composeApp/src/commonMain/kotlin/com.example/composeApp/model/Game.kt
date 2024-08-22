@@ -25,8 +25,8 @@ class Game {
 
     val cells: StateFlow<Array<Array<Cell>>> = _cells.asStateFlow()
 
-    private val _selectedCell: MutableStateFlow<Pair<Int, Int>?> = MutableStateFlow(null)
-    val selectedCell: StateFlow<Pair<Int, Int>?> = _selectedCell.asStateFlow()
+    private val _selectedCell: MutableStateFlow<Cell?> = MutableStateFlow(null)
+    val selectedCell: StateFlow<Cell?> = _selectedCell.asStateFlow()
 
     private val _runState: MutableStateFlow<RunState> = MutableStateFlow(RunState.Init)
     val runState: StateFlow<RunState> = _runState.asStateFlow()
@@ -34,35 +34,33 @@ class Game {
     private val inputCellStack: Stack<Cell> = Stack()
 
     private fun inputValue(
-        row: Int,
-        col: Int,
+        cell: Cell,
         value: Int,
         isDefault: Boolean = false
     ) {
         _cells.value = cells.value.copyOf().apply {
-            val isValid = isValid(row, col, value)
-            val cell = Cell(row, col, value, isValid, isDefault)
-            this[row][col] = cell
+            val isValid = isValid(cell, value)
+            val c = cell.copy(value = value, isValid = isValid, isDefault = isDefault)
+            this[cell.row][cell.col] = c
 
             if (isValid && value != -1 && isDefault.not()) {
-                inputCellStack.push(cell)
+                inputCellStack.push(c)
             }
         }
     }
 
     private fun isValid(
-        row: Int,
-        col: Int,
+        cell: Cell,
         value: Int
     ): Boolean {
         if (value == -1) return true
         return cells.value.flatten()
             .filterNot {
-                it.row == row && it.col == col
+                it.row == cell.row && it.col == cell.col
             }.any {
                 it.value == value &&
-                        (it.row == row || it.col == col ||
-                                (it.row / 3 == row / 3 && it.col / 3 == col / 3))
+                        (it.row == cell.row || it.col == cell.col ||
+                                (it.row / 3 == cell.row / 3 && it.col / 3 == cell.col / 3))
             }.not()
     }
 
@@ -88,17 +86,17 @@ class Game {
     }
 
     private suspend fun inputValueAndFindValid(cell: Cell, addRetryCount: () -> Unit): Boolean {
-        setSelectedCell(cell.row, cell.col)
+        setSelectedCell(cell)
         val startValue = max(cell.value, 0) + 1
 
         for (i in startValue..9) {
-            val isValid = isValid(cell.row, cell.col, i)
-            inputValue(cell.row, cell.col, i)
+            val isValid = isValid(cell, i)
+            inputValue(cell, i)
             yield()
             addRetryCount()
             if (isValid) return true
         }
-        inputValue(cell.row, cell.col, -1)
+        inputValue(cell, -1)
         yield()
         return false
     }
@@ -108,7 +106,7 @@ class Game {
             it.value == -1
         }.minByOrNull { cell ->
             (1..9).filter { value ->
-                isValid(cell.row, cell.col, value)
+                isValid(cell, value)
             }.size
         }
     }
@@ -156,11 +154,11 @@ class Game {
         value: Int
     ) {
         selectedCell.value?.let {
-            inputValue(it.first, it.second, value, value != -1)
+            inputValue(it, value, value != -1)
         }
     }
 
-    fun setSelectedCell(row: Int, col: Int) {
-        _selectedCell.value = Pair(row, col)
+    fun setSelectedCell(cell: Cell) {
+        _selectedCell.value = cell
     }
 }

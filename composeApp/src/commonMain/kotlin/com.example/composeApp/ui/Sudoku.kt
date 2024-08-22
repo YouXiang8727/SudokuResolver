@@ -49,13 +49,16 @@ fun Sudoku(
                             .weight(1f)
                             .clickable {
                                 viewModel.setSelectedCell(
-                                    row,
-                                    col
+                                    cell
                                 )
                             }.then(
                                 if (
-                                    row == selectedCell.value?.first &&
-                                    col == selectedCell.value?.second
+                                    selectedCell.value?.isSameCell(cell) == true
+                                ) {
+                                    Modifier.background(Color.Gray)
+                                }else if (
+                                    selectedCell.value?.isSameRowOrCol(cell) == true ||
+                                    selectedCell.value?.isSameBox(cell) == true
                                 ) {
                                     Modifier.background(Color.LightGray)
                                 }else {
