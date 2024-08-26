@@ -99,20 +99,22 @@ class SudokuViewModel : MviViewModel<SudokuState, SudokuAction>(
         addRetryCount: () -> Unit
     ): Boolean {
         selectCell(cell)
+        addRetryCount()
         val startValue = max(cell.value, 0) + 1
 
-        for (i in startValue..9) {
-            val isValid = cell.isValid(i, state.cells)
-            inputValue(i, false)
-            yield()
-            addRetryCount()
-            if (isValid) {
-                stack.push(state.cells[cell.row][cell.col])
-                return true
-            }
+        val validCell = (startValue..9).firstOrNull {
+            cell.isValid(it, state.cells)
         }
-        eraseValue()
-        yield()
-        return false
+
+        if (validCell != null) {
+            inputValue(validCell, false)
+            yield()
+            stack.push(Cell(cell.row, cell.col, validCell, false))
+            return true
+        }else {
+            eraseValue()
+            yield()
+            return false
+        }
     }
 }
