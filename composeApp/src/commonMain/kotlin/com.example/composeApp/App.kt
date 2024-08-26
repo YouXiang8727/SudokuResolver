@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.composeApp.model.enums.RunState
+import com.example.composeApp.mvi.game.SudokuViewModel
 import com.example.composeApp.ui.Sudoku
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -25,7 +26,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Composable
 @Preview
 fun App(
-    viewModel: MainViewModel = viewModel { MainViewModel() }
+    viewModel: SudokuViewModel = viewModel { SudokuViewModel() }
 ) {
     MaterialTheme {
         val scaffoldState = rememberScaffoldState()
@@ -40,11 +41,8 @@ fun App(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val gameState = viewModel.runState.collectAsStateWithLifecycle()
-                val cells = viewModel.cells.collectAsStateWithLifecycle()
-
-                LaunchedEffect(gameState.value) {
-                    when(val state = gameState.value) {
+                LaunchedEffect(viewModel.state.runState) {
+                    when(val state = viewModel.state.runState) {
                         is RunState.Error -> {
                             scaffoldState.snackbarHostState.showSnackbar(
                                 state.message
@@ -63,9 +61,9 @@ fun App(
                 ) {
                     TextButton(
                         onClick = {
-                            viewModel.inputValue(-1)
+                            viewModel.eraseValue()
                         },
-                        enabled = gameState.value.isRunning.not()
+                        enabled = viewModel.state.runState.isRunning.not()
                     ) {
                         Text(
                             text = "Erased"
@@ -76,7 +74,7 @@ fun App(
                         onClick = {
                             viewModel.clearResult()
                         },
-                        enabled = gameState.value.isRunning.not()
+                        enabled = viewModel.state.runState.isRunning.not()
                     ) {
                         Text("Clear Result")
                     }
@@ -85,7 +83,7 @@ fun App(
                         onClick = {
                             viewModel.clearAll()
                         },
-                        enabled = gameState.value.isRunning.not()
+                        enabled = viewModel.state.runState.isRunning.not()
                     ) {
                         Text(
                             "Clear All"
@@ -94,20 +92,26 @@ fun App(
 
                     TextButton(
                         onClick = {
-                            if (cells.value.flatten().any() {
-                                it.isDefault.not() && it.value != -1
-                            }) {
+                            if (viewModel.state.isResultCleared.not()) {
                                 scope.launch {
-                                    scaffoldState.snackbarHostState
-                                        .showSnackbar(
-                                            "Please clear result first"
-                                        )
+                                    scaffoldState.snackbarHostState.showSnackbar(
+                                        "Please clear result first"
+                                    )
                                 }
-                            }else {
-                                viewModel.run()
+                                return@TextButton
                             }
+
+                            if (viewModel.state.isValidSudoku.not()) {
+                                scope.launch {
+                                    scaffoldState.snackbarHostState.showSnackbar(
+                                        "Sudoku is not valid with invalid cell(s)"
+                                    )
+                                }
+                                return@TextButton
+                            }
+                            viewModel.run()
                         },
-                        enabled = gameState.value.isRunning.not()
+                        enabled = viewModel.state.runState.isRunning.not()
                     ) {
                         Text(
                             "Run"
@@ -120,15 +124,15 @@ fun App(
                 Row(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    val selectedCell = viewModel.selectedCell.collectAsStateWithLifecycle()
                     for (i in 1..9) {
                         TextButton(
                             modifier = Modifier.weight(1f)
                                 .aspectRatio(1f),
                             onClick = {
-                                viewModel.inputValue(i)
+                                viewModel.inputValue(i, true)
                             },
-                            enabled = selectedCell.value != null && gameState.value.isRunning.not()
+                            enabled = viewModel.state.selectedCell != null &&
+                                    viewModel.state.runState.isRunning.not()
                         ) {
                             Text(
                                 text = i.toString(),

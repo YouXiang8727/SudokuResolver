@@ -23,13 +23,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.composeApp.MainViewModel
+import com.example.composeApp.mvi.game.SudokuViewModel
 
 @Composable
 fun Sudoku(
-    viewModel: MainViewModel = viewModel { MainViewModel() }
+    viewModel: SudokuViewModel = viewModel { SudokuViewModel() }
 ) {
-    val cells = viewModel.cells.collectAsStateWithLifecycle()
-    val selectedCell = viewModel.selectedCell.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -37,7 +36,7 @@ fun Sudoku(
             .padding(4.dp)
             .border(4.dp, Color.Black)
     ) {
-        cells.value.forEachIndexed { row, cells ->
+        viewModel.state.cells.forEachIndexed { row, cells ->
             Row(
                 modifier = Modifier.fillMaxWidth()
                     .weight(1f)
@@ -48,28 +47,13 @@ fun Sudoku(
                             .fillMaxHeight()
                             .weight(1f)
                             .clickable {
-                                viewModel.setSelectedCell(
-                                    cell
-                                )
-                            }.then(
-                                if (
-                                    selectedCell.value?.isSameCell(cell) == true
-                                ) {
-                                    Modifier.background(Color.Gray)
-                                }else if (
-                                    selectedCell.value?.isSameRowOrCol(cell) == true ||
-                                    selectedCell.value?.isSameBox(cell) == true
-                                ) {
-                                    Modifier.background(Color.LightGray)
-                                }else {
-                                    Modifier.background(Color.White)
-                                }
-                            ),
+                                viewModel.selectCell(cell)
+                            }.background(cell.cellColor(viewModel.state.selectedCell)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = cell.showValue,
-                            color = if (cell.isValid) {
+                            color = if (cell.isValid(viewModel.state.cells)) {
                                 Color.Black
                             }else {
                                 Color.Red
