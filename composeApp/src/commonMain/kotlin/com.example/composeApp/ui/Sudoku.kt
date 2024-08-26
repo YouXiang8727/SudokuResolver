@@ -20,10 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.composeApp.MainViewModel
-import com.example.composeApp.mvi.game.SudokuViewModel
+import com.example.composeApp.mvi.sudoku.SudokuViewModel
 
 @Composable
 fun Sudoku(

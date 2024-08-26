@@ -1,4 +1,4 @@
-package com.example.composeApp.mvi.game
+package com.example.composeApp.mvi.sudoku
 
 import com.example.composeApp.model.Cell
 import com.example.composeApp.mvi.Reducer

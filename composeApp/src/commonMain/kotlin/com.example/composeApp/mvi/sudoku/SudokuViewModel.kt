@@ -1,4 +1,4 @@
-package com.example.composeApp.mvi.game
+package com.example.composeApp.mvi.sudoku
 
 import androidx.lifecycle.viewModelScope
 import com.example.composeApp.model.Cell
@@ -6,7 +6,6 @@ import com.example.composeApp.model.common.Stack
 import com.example.composeApp.model.enums.RunState
 import com.example.composeApp.mvi.MviViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
